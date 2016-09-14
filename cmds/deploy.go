@@ -252,24 +252,26 @@ func NewCmdDeploy(f *cmdutil.Factory) *cobra.Command {
 					printAddServiceAccount(c, f, "fluentd")
 					printAddServiceAccount(c, f, "registry")
 				} else {
-					r, err := verifyRestrictedSecurityContextConstraints(c, f)
-					printResult("SecurityContextConstraints restricted", r, err)
-					r, err = deployFabric8SecurityContextConstraints(c, f, ns)
-					printResult("SecurityContextConstraints fabric8", r, err)
-					r, err = deployFabric8SASSecurityContextConstraints(c, f, ns)
-					printResult("SecurityContextConstraints "+Fabric8SASSCC, r, err)
+					// dont try to assign roles or create SCCs on on openshift dedicated
 
-					printAddClusterRoleToUser(oc, f, "cluster-admin", "system:serviceaccount:"+ns+":fabric8")
-					printAddClusterRoleToUser(oc, f, "cluster-admin", "system:serviceaccount:"+ns+":jenkins")
-					printAddClusterRoleToUser(oc, f, "cluster-admin", "system:serviceaccount:"+ns+":exposecontroller")
-					printAddClusterRoleToUser(oc, f, "cluster-reader", "system:serviceaccount:"+ns+":metrics")
-					printAddClusterRoleToUser(oc, f, "cluster-reader", "system:serviceaccount:"+ns+":fluentd")
+					// r, err := verifyRestrictedSecurityContextConstraints(c, f)
+					// printResult("SecurityContextConstraints restricted", r, err)
+					// r, err = deployFabric8SecurityContextConstraints(c, f, ns)
+					// printResult("SecurityContextConstraints fabric8", r, err)
+					// r, err = deployFabric8SASSecurityContextConstraints(c, f, ns)
+					// printResult("SecurityContextConstraints "+Fabric8SASSCC, r, err)
 
-					printAddClusterRoleToGroup(oc, f, "cluster-reader", "system:serviceaccounts")
+					// printAddClusterRoleToUser(oc, f, "cluster-admin", "system:serviceaccount:"+ns+":fabric8")
+					// printAddClusterRoleToUser(oc, f, "cluster-admin", "system:serviceaccount:"+ns+":jenkins")
+					// printAddClusterRoleToUser(oc, f, "cluster-admin", "system:serviceaccount:"+ns+":exposecontroller")
+					// printAddClusterRoleToUser(oc, f, "cluster-reader", "system:serviceaccount:"+ns+":metrics")
+					// printAddClusterRoleToUser(oc, f, "cluster-reader", "system:serviceaccount:"+ns+":fluentd")
 
-					printAddServiceAccount(c, f, "fluentd")
-					printAddServiceAccount(c, f, "registry")
-					printAddServiceAccount(c, f, "router")
+					// printAddClusterRoleToGroup(oc, f, "cluster-reader", "system:serviceaccounts")
+
+					// printAddServiceAccount(c, f, "fluentd")
+					// printAddServiceAccount(c, f, "registry")
+					// printAddServiceAccount(c, f, "router")
 
 					if cmd.Flags().Lookup(templatesFlag).Value.String() == "true" {
 						if deployConsole {
