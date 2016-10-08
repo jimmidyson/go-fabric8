@@ -65,7 +65,11 @@ func NewCmdStart(f *cmdutil.Factory) *cobra.Command {
 			// check if already running
 			out, err := exec.Command(kubeBinary, "status").Output()
 			if err != nil {
-				util.Fatalf("Unable to get status %v", err)
+				if strings.Contains(err.Error(), "machine does not exist") {
+					util.Fatalf("Unable to get status, do you have a previous %s? Try deleting ~/.%s and the old virtual machine.  Error: %v", kubeBinary, kubeBinary, err)
+				} else {
+					util.Fatalf("Unable to get status %v", err)
+				}
 			}
 
 			if err == nil && strings.Contains(string(out), "Running") {
