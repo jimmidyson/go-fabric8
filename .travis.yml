@@ -27,7 +27,7 @@ install:
   - make
   - sudo make install
   - popd
-  - sudo libvirtd -d -l -f libvirtd.conf
+  - sudo libvirtd -d -l -f hack/integration/libvirtd.conf
   - sudo virtlogd -d || true
 
 script:
