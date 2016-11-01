@@ -28,6 +28,7 @@ install:
   - sudo make install
   - popd
   - sudo libvirtd -d -l -f hack/integration/libvirtd.conf
+  - sudo chmod a+rwx /var/run/libvirt/libvirt-sock*
   - sudo curl -Lo /usr/local/bin/docker-machine-driver-kvm https://github.com/dhiltgen/docker-machine-kvm/releases/download/v0.7.0/docker-machine-driver-kvm
   - sudo chmod 755 /usr/local/bin/docker-machine-driver-kvm
 
