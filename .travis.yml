@@ -29,6 +29,8 @@ install:
   - popd
   - sudo libvirtd -d -l -f hack/integration/libvirtd.conf
   - sudo virtlogd -d || true
+  - sudo curl -Lo /usr/local/bin/docker-machine-driver-kvm https://github.com/dhiltgen/docker-machine-kvm/releases/download/v0.7.0/docker-machine-driver-kvm
+  - sudo chmod 755 /usr/local/bin/docker-machine-driver-kvm
 
 script:
   - virsh -c qemu:///system list
