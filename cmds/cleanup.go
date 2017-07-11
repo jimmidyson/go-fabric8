@@ -110,61 +110,61 @@ func cleanUpKubernetesResources(c *k8sclient.Client, ns string, selector labels.
 
 	err := deleteDeployments(c, ns, selector)
 	if err != nil {
-		util.Fatalf("%s", err)
+		util.Fatalf("%s\n", err)
 	}
 
 	err = deleteReplicationControllers(c, ns, selector)
 	if err != nil {
-		util.Fatalf("%s", err)
+		util.Fatalf("%s\n", err)
 	}
 
 	err = deleteReplicaSets(c, ns, selector)
 	if err != nil {
-		util.Fatalf("%s", err)
+		util.Fatalf("%s\n", err)
 	}
 
 	err = deleteServices(c, ns, selector)
 	if err != nil {
-		util.Fatalf("%s", err)
+		util.Fatalf("%s\n", err)
 	}
 
 	err = deleteSecrets(c, ns, selector)
 	if err != nil {
-		util.Fatalf("%s", err)
+		util.Fatalf("%s\n", err)
 	}
 
 	err = deleteIngress(c, ns, selector)
 	if err != nil {
-		util.Fatalf("%s", err)
+		util.Warnf("%s\n", err)
 	}
 
 	err = deleteConfigMaps(c, ns, selector)
 	if err != nil {
-		util.Fatalf("%s", err)
+		util.Fatalf("%s\n", err)
 	}
 
 	catalogSelector, err := unversioned.LabelSelectorAsSelector(&unversioned.LabelSelector{MatchLabels: map[string]string{"kind": "catalog"}})
 	if err != nil {
-		util.Fatalf("%s", err)
+		util.Fatalf("%s\n", err)
 	} else {
 		err = deleteConfigMaps(c, ns, catalogSelector)
 		if err != nil {
-			util.Fatalf("%s", err)
+			util.Fatalf("%s\n", err)
 		}
 	}
 
 	err = deleteServiceAccounts(c, ns, selector)
 	if err != nil {
-		util.Fatalf("%s", err)
+		util.Fatalf("%s\n", err)
 	}
 
 	err = deleteEnvironments(c, selector)
 	if err != nil {
-		util.Fatalf("%s", err)
+		util.Warnf("%s\n", err)
 	}
 	err = deletePods(c, ns, selector)
 	if err != nil {
-		util.Fatalf("%s", err)
+		util.Fatalf("%s\n", err)
 	}
 }
 
@@ -305,6 +305,7 @@ func deleteConfigMaps(c *k8sclient.Client, ns string, selector labels.Selector) 
 	if err != nil {
 		return err
 	}
+
 	for _, cm := range cmps.Items {
 		err := c.ConfigMaps(ns).Delete(cm.Name)
 		if err != nil {
