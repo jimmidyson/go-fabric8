@@ -634,11 +634,7 @@ func getTemplateURI(packageName, mavenRepo string, legacyPackage bool, d Default
 
 	if typeOfMaster == util.Kubernetes {
 		if !strings.HasPrefix(uri, "file://") {
-			if legacyPackage {
-				uri += "kubernetes.yml"
-			} else {
-				uri += "k8s-template.yml"
-			}
+			uri += "kubernetes.yml"
 		}
 
 	} else {
