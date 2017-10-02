@@ -131,6 +131,7 @@ func NewGoFabric8Command(f cmdutil.Factory, in io.Reader, out, err io.Writer) *c
 	cmds.AddCommand(commands.NewCmdVolumes(f))
 	cmds.AddCommand(commands.NewCmdWaitFor(f))
 	cmds.AddCommand(commands.NewCmdTenant(f))
+	cmds.AddCommand(commands.NewCmdUninstall(f))
 
 	getcmd := commands.NewCmdGet(f, out)
 	cmds.AddCommand(getcmd)
