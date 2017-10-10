@@ -8,6 +8,7 @@ import (
 
 	"encoding/json"
 
+	"github.com/fabric8io/gofabric8/client"
 	"github.com/fabric8io/gofabric8/util"
 	"github.com/spf13/cobra"
 	cmdutil "k8s.io/kubernetes/pkg/kubectl/cmd/util"
@@ -47,7 +48,13 @@ func NewCmdUninstall(f cmdutil.Factory) *cobra.Command {
 }
 
 func (p *uninstallFlags) uninstall(f cmdutil.Factory) error {
-	url := "http://f8tenant-fabric8.openshift.chmouel.com/api/tenant/all"
+	c, cfg := client.NewClient(f)
+	oc, _ := client.NewOpenShiftClient(cfg)
+	initSchema()
+	url, err := FindServiceInEveryNamespace("f8tenant", c, oc, f)
+	cmdutil.CheckErr(err)
+	url += "/api/tenant/all"
+
 	if !p.confirm {
 		confirm := ""
 		util.Warn("WARNING this command will delete all resources from *ALL TENANTS*\n")
@@ -58,9 +65,6 @@ func (p *uninstallFlags) uninstall(f cmdutil.Factory) error {
 			return nil
 		}
 	}
-	cfg, err := f.ClientConfig()
-	cmdutil.CheckErr(err)
-
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", url, nil)
 	cmdutil.CheckErr(err)
