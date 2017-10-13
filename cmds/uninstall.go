@@ -53,7 +53,7 @@ func (p *uninstallFlags) uninstall(f cmdutil.Factory) error {
 	initSchema()
 	url, err := FindServiceInEveryNamespace("f8tenant", c, oc, f)
 	cmdutil.CheckErr(err)
-	url += "/api/tenant/all"
+	url += "/api/namespaces/all"
 
 	if !p.confirm {
 		confirm := ""
