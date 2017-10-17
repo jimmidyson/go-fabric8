@@ -24,6 +24,7 @@ import (
 
 	"github.com/fabric8io/gofabric8/client"
 	"github.com/fabric8io/gofabric8/util"
+	oclient "github.com/openshift/origin/pkg/client"
 	"github.com/pkg/browser"
 	"github.com/spf13/cobra"
 	kubeApi "k8s.io/kubernetes/pkg/api"
@@ -99,6 +100,57 @@ func openService(ns string, serviceName string, c *clientset.Clientset, printURL
 	if !found {
 		util.Errorf("No service %s in namespace %s\n", serviceName, ns)
 	}
+}
+
+// FindServiceInEveryNamespace try to find a service in every namespace (KS) or
+// project (OS), try first the current one and then the openshift projects or
+// kubernetes namespaces.
+func FindServiceInEveryNamespace(serviceName string, c *clientset.Clientset, oc *oclient.Client, f cmdutil.Factory) (url string, err error) {
+	ns, _, _ := f.DefaultNamespace()
+	svc, err := c.Services(ns).Get(serviceName)
+	if err == nil {
+		url = svc.ObjectMeta.Annotations[exposeURLAnnotation]
+		if len(url) > 0 {
+			return url, nil
+		} else {
+			return "", errors.New(fmt.Sprintf("no url annotations has been set for service %s.", serviceName))
+		}
+	}
+
+	typeOfMaster := util.TypeOfMaster(c)
+	if typeOfMaster == util.OpenShift {
+		projects, err := oc.Projects().List(kubeApi.ListOptions{})
+		if err != nil {
+			return "", err
+		}
+		for _, ns := range projects.Items {
+			svc, err := c.Services(ns.GetName()).Get(serviceName)
+			if err == nil {
+				url = svc.ObjectMeta.Annotations[exposeURLAnnotation]
+				if len(url) > 0 {
+					return url, nil
+				} else {
+					return "", errors.New(fmt.Sprintf("no url annotations has been set for service %s.", serviceName))
+				}
+			}
+		}
+	} else {
+		namespaces, err := c.Namespaces().List(kubeApi.ListOptions{})
+		if err != nil {
+			return "", err
+		}
+		for _, ns := range namespaces.Items {
+			svc, err = c.Services(ns.GetName()).Get(serviceName)
+			url = svc.ObjectMeta.Annotations[exposeURLAnnotation]
+			if len(url) > 0 {
+				return url, nil
+			} else {
+				return "", errors.New(fmt.Sprintf("no url annotations has been set for service %s.", serviceName))
+			}
+		}
+	}
+
+	return "", errors.New(fmt.Sprintf("service %s has not been found in any namespaces or projects.", serviceName))
 }
 
 // FindServiceURL returns the external service URL waiting a little bit for it to show up
