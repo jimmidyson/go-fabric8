@@ -105,9 +105,23 @@ func (p *erasePVCFlags) erasePVC(f cmdutil.Factory) (err error) {
 
 	// NB(chmou): Trying to get this right, find the pods attached to the pvc before,
 	// then Recreate the PVC and then delete the pods attached to it so it
-	// attach to the new one.
+	// attach to the new one. Get then all the pods attached to the service
+	// attached to the pod attached to the volume (hard to explain in words you
+	// may want to just read the code ;)
 	attachedpods, err := findPodsAttachedtoPVC(p.volumeName, c, userNS)
 	cmdutil.CheckErr(err)
+
+	for _, pod := range attachedpods {
+		serviceName, err := getLabelValueOfPod(c, ns, pod, "service")
+		cmdutil.CheckErr(err)
+		if serviceName != "" {
+			sp, err := getPodsDependOfService(c, ns, serviceName)
+			cmdutil.CheckErr(err)
+			for _, v := range sp {
+				attachedpods = append(attachedpods, v)
+			}
+		}
+	}
 
 	cmd := []string{"get", "-o", "yaml", "-n", userNS, "pvc", p.volumeName}
 	output, err := runCommandWithOutput("kubectl", cmd...)

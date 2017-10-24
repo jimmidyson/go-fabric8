@@ -48,15 +48,16 @@ const (
 	Failure Result = "✘"
 
 	// cmd flags
-	yesFlag       = "yes"
-	hostPathFlag  = "host-path"
-	nameFlag      = "name"
-	domainFlag    = "domain"
-	apiServerFlag = "api-server"
-	consoleFlag   = "console"
-	templatesFlag = "templates"
-	asFlag        = "as"
-	DefaultDomain = ""
+	yesFlag                     = "yes"
+	hostPathFlag                = "host-path"
+	nameFlag                    = "name"
+	domainFlag                  = "domain"
+	apiServerFlag               = "api-server"
+	consoleFlag                 = "console"
+	templatesFlag               = "templates"
+	asFlag                      = "as"
+	DefaultDomain               = ""
+	serviceDependencyAnnotation = "fabric8.io/service-dependencies"
 )
 
 func defaultNamespace(cmd *cobra.Command, f cmdutil.Factory) (string, error) {
@@ -502,6 +503,44 @@ func writeStringtoFile(filename, body string) (err error) {
 	}
 
 	return
+}
+
+// getPodsDependOfService go over all the pods which has the
+// fabric8.io/service-dependencies annotation and get the one t// hat has the
+// serviceName we want.
+func getPodsDependOfService(c *clientset.Clientset, ns, serviceName string) (ret []string, err error) {
+	list, err := c.Pods(ns).List(api.ListOptions{})
+	if err != nil {
+		return
+	}
+	for _, item := range list.Items {
+		for k, v := range item.GetAnnotations() {
+			if k == serviceDependencyAnnotation {
+				for _, s := range strings.Split(v, ",") {
+					if s == serviceName {
+						ret = append(ret, item.Name)
+					}
+				}
+			}
+		}
+	}
+	return
+}
+
+// getLabelValueofpod get a label for a pod.
+func getLabelValueOfPod(c *clientset.Clientset, ns, podName, labelKey string) (string, error) {
+	pod, err := c.Pods(ns).Get(podName)
+	if err != nil {
+		return "", err
+	}
+
+	for key, value := range pod.GetLabels() {
+		if key == labelKey {
+			return value, nil
+		}
+	}
+
+	return "", nil
 }
 
 func getTLSAcmeEmail(c *clientset.Clientset, tlsAcmeEmail string) map[string]string {
