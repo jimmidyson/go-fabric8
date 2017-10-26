@@ -48,16 +48,18 @@ const (
 	Failure Result = "✘"
 
 	// cmd flags
-	yesFlag                     = "yes"
-	hostPathFlag                = "host-path"
-	nameFlag                    = "name"
-	domainFlag                  = "domain"
-	apiServerFlag               = "api-server"
-	consoleFlag                 = "console"
-	templatesFlag               = "templates"
-	asFlag                      = "as"
-	DefaultDomain               = ""
-	serviceDependencyAnnotation = "fabric8.io/service-dependencies"
+	yesFlag       = "yes"
+	hostPathFlag  = "host-path"
+	nameFlag      = "name"
+	domainFlag    = "domain"
+	apiServerFlag = "api-server"
+	consoleFlag   = "console"
+	templatesFlag = "templates"
+	asFlag        = "as"
+	DefaultDomain = ""
+	kubectlBinary = "kubectl"
+	ocBinary      = "oc"
+  serviceDependencyAnnotation = "fabric8.io/service-dependencies"
 )
 
 func defaultNamespace(cmd *cobra.Command, f cmdutil.Factory) (string, error) {
@@ -240,6 +242,14 @@ func watchAndWaitForBuild(c *oclient.Client, ns string, name string, timeout tim
 		return err
 	}
 	return nil
+}
+
+func getBinary(binary string) (epath string, err error) {
+	if runtime.GOOS == "windows" {
+		binary += ".exe"
+	}
+	epath, err = exec.LookPath(binary)
+	return
 }
 
 func detectCurrentUserNamespace(ns string, c *clientset.Clientset, oc *oclient.Client) (string, error) {
