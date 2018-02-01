@@ -25,6 +25,8 @@ import (
 	"github.com/fabric8io/gofabric8/client"
 	"github.com/fabric8io/gofabric8/util"
 	"github.com/spf13/cobra"
+	"k8s.io/kubernetes/pkg/api"
+	clientset "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
 	cmdutil "k8s.io/kubernetes/pkg/kubectl/cmd/util"
 )
 
@@ -89,16 +91,36 @@ func writeLines(lines []string, path string) error {
 func (p *erasePVCFlags) erasePVC(f cmdutil.Factory) (err error) {
 	var userNS string
 
+	c, cfg := client.NewClient(f)
+	ns, _, _ := f.DefaultNamespace()
+	oc, _ := client.NewOpenShiftClient(cfg)
+	initSchema()
+
+	userNS, err = detectCurrentUserNamespace(ns, c, oc)
+	cmdutil.CheckErr(err)
+
 	if p.userNS != "" {
 		userNS = p.userNS
-	} else {
-		c, cfg := client.NewClient(f)
-		ns, _, _ := f.DefaultNamespace()
-		oc, _ := client.NewOpenShiftClient(cfg)
-		initSchema()
+	}
 
-		userNS, err = detectCurrentUserNamespace(ns, c, oc)
+	// NB(chmou): Trying to get this right, find the pods attached to the pvc before,
+	// then Recreate the PVC and then delete the pods attached to it so it
+	// attach to the new one. Get then all the pods attached to the service
+	// attached to the pod attached to the volume (hard to explain in words you
+	// may want to just read the code ;)
+	attachedpods, err := findPodsAttachedtoPVC(p.volumeName, c, userNS)
+	cmdutil.CheckErr(err)
+
+	for _, pod := range attachedpods {
+		serviceName, err := getLabelValueOfPod(c, ns, pod, "service")
 		cmdutil.CheckErr(err)
+		if serviceName != "" {
+			sp, err := getPodsDependOfService(c, ns, serviceName)
+			cmdutil.CheckErr(err)
+			for _, v := range sp {
+				attachedpods = append(attachedpods, v)
+			}
+		}
 	}
 
 	cmd := []string{"get", "-o", "yaml", "-n", userNS, "pvc", p.volumeName}
@@ -153,8 +175,37 @@ func (p *erasePVCFlags) erasePVC(f cmdutil.Factory) (err error) {
 		util.Fatal("Error while running cmd: " + strings.Join(cmd, " ") + " Error: " + err.Error() + " Output: " + output + "\n")
 	}
 
+	for _, pod := range attachedpods {
+		cmd = []string{"delete", "-n", userNS, "pod", pod}
+		output, err = runCommandWithOutput("kubectl", cmd...)
+		if err != nil {
+			util.Fatal("Error while running cmd: " + strings.Join(cmd, " ") + " Error: " + err.Error() + " Output: " + output + "\n")
+		}
+		util.Successf("Pod %s attached to %s has been deleted.\n", pod, p.volumeName)
+	}
+
 	util.Success("Volume: " + p.volumeName + " has been recreated.\n")
 	os.Remove(tmpfile.Name())
 
+	return
+}
+
+// findPodsAttachedtoPVC find all pods that are attached to a certain PVC,
+// return a list of the pods name
+func findPodsAttachedtoPVC(findVolume string, c *clientset.Clientset, ns string) (ret []string, err error) {
+	pods, err := c.Pods(ns).List(api.ListOptions{})
+	if err != nil {
+		return
+	}
+
+	if pods != nil {
+		for _, item := range pods.Items {
+			for _, volume := range item.Spec.Volumes {
+				if volume.Name == findVolume {
+					ret = append(ret, item.GetName())
+				}
+			}
+		}
+	}
 	return
 }
